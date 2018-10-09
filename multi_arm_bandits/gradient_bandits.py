@@ -1,16 +1,27 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
+
+# checking to see if the plots need to be shown
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', '--visualize', action="store_true")
+args = parser.parse_args()
 
 def probs_from_prefs(prefs):
+    ''' probability from preferences '''
     return np.exp(prefs)/(np.sum(np.exp(prefs)))
 
 def running_average(average, new_item, count):
+    ''' add item to running average '''
     return ((average*count)+new_item)/(count+1) #np.mean([average,new_item])
 
 # config
 num_arms = 4
 alpha = 0.1
 baseline = running_average
+savefig_path = './'
+savefig_names = ['baseline_avg.png', 'true_returns.png']
 
 class MultiArmBandits:
     ''' Class to init and play stationary MultiArmBandits'''
@@ -20,6 +31,7 @@ class MultiArmBandits:
         self.arm_reward_stds = np.random.rand(num_arms)
 
     def play(self, selected_arm):
+        ''' return sampled reward for selected arm'''
         return np.random.normal(loc=self.arm_reward_means[selected_arm], scale=self.arm_reward_stds[selected_arm])
 
 # initial values for arm preferences and other vars
@@ -55,16 +67,20 @@ while time<1000:
 plt.figure(1)
 plt.plot(baseline_values)
 plt.xlabel('time')
-plt.ylabel('average reward')
+plt.ylabel('baseline avg. reward')
+plt.savefig(os.path.join(savefig_path,savefig_names[0]))
 
 plt.figure(2)
 choice_hist, _ = np.histogram(arm_choices, bins=num_arms)
-plt.bar(arms, choice_hist)
+_ = [plt.bar(armi, choice_histi) for armi,choice_histi in zip(arms, choice_hist)]
 plt.xlabel('arm_choice')
 plt.ylabel('frequency of arm being chosen')
+plt.legend(['Arm return mean = {}'.format(arm_reward) for arm_reward in bandits.arm_reward_means])
+plt.savefig(os.path.join(savefig_path,savefig_names[1]))
 
 print('The payoffs from the arms were as follows:')
 print('means: ', bandits.arm_reward_means)
 print('std: ', bandits.arm_reward_stds)
 
-plt.show()
+if args.visualize:
+    plt.show()
